@@ -25,3 +25,21 @@ Environment variables to set on the Vercel project:
 | `YAHOO_CONSUMER_KEY`, `YAHOO_CONSUMER_SECRET`, `YAHOO_REDIRECT_URI` | Optional defaults for the Yahoo OAuth flow. |
 
 Storage on Vercel falls back to `/tmp`, which is ephemeral per function instance. Persistent league configuration should be done on the local runtime.
+
+## Live deployment record
+
+| Item | Value |
+| --- | --- |
+| Repository | https://github.com/csummers1031/Fantasy-engine |
+| Branch | `claude/fantasy-football-draft-engine-qrto1y` (production branch on Vercel) |
+| Vercel team | Hacking Demand (`team_zBVDcTeJRlw0cA9DLFF07vna`) |
+| Vercel project | `fantasy-engine` (`prj_Oywu0ROFu4xRXbMzQLsVRVNKNQMs`) |
+| Production URL | https://fantasy-engine-ten.vercel.app |
+| Team alias | https://fantasy-engine-hacking-demand.vercel.app |
+| Inspector | https://vercel.com/hacking-demand/fantasy-engine |
+| First green deployment | `dpl_CG1R56VByhP1jaGKpYgii69afPMb` from commit `e19317a` |
+| Live check | `GET /api/health` returned 200, `/sandbox` server-rendered 200 |
+
+The first deployment (`dpl_SyZcjLDrKG8CEuqDqYxQWVFW6UA2`) failed with `module_not_found` because the unanchored `data/` ignore rule excluded `src/lib/data`. The rule is now anchored to the repository root.
+
+Deployment protection: the team default has Vercel Authentication enabled for all deployments except custom domains, so visitors must sign in to Vercel unless a custom domain is attached or the setting is changed in the project's Deployment Protection page. `CREDENTIAL_ENCRYPTION_KEY` is not yet set on the project; the health endpoint reports the fallback key until it is added.
