@@ -7,7 +7,7 @@ coverage/
 .env
 .env.local
 .env.*.local
-data/
+/data/
 .browser-profiles/
 *.log
 .DS_Store
