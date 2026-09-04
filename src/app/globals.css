@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 215 28% 6%;
+    --foreground: 210 20% 92%;
+    --card: 215 24% 10%;
+    --card-foreground: 210 20% 92%;
+    --popover: 215 24% 9%;
+    --popover-foreground: 210 20% 92%;
+    --primary: 199 89% 58%;
+    --primary-foreground: 215 28% 6%;
+    --secondary: 215 20% 16%;
+    --secondary-foreground: 210 20% 88%;
+    --muted: 215 20% 14%;
+    --muted-foreground: 215 12% 62%;
+    --accent: 215 20% 18%;
+    --accent-foreground: 210 20% 92%;
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 210 20% 98%;
+    --border: 215 20% 19%;
+    --input: 215 20% 22%;
+    --ring: 199 89% 58%;
+    --radius: 0.375rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    @apply bg-desk-bg text-foreground antialiased;
+    font-feature-settings: "tnum" 1, "cv11" 1;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: hsl(var(--border));
+    border-radius: 4px;
+  }
+}
+
+@layer utilities {
+  .desk-grid {
+    display: grid;
+    gap: 0.5rem;
+  }
+
+  .mono {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+}
