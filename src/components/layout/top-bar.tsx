@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Bell, Wifi, WifiOff } from "lucide-react";
 import { useEventStream } from "@/hooks/use-event-stream";
 import { useAudioAlert } from "@/hooks/use-audio-alert";
@@ -18,6 +18,8 @@ export function TopBar() {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [audioEnabled, setAudioEnabled] = useState(true);
   const playTone = useAudioAlert(audioEnabled);
+  const mountedAt = useRef(Date.now());
+  const seenKeys = useRef(new Set<string>());
 
   useEffect(() => {
     let cancelled = false;
@@ -35,18 +37,28 @@ export function TopBar() {
   }, []);
 
   const { connected } = useEventStream((event: EngineEvent) => {
+    if (event.at < mountedAt.current - 2000) {
+      return;
+    }
     if (event.type === "system.notice") {
-      pushToast(event.level, event.message, event.audio);
+      pushToast(event.level, event.message, event.audio, `${event.type}:${event.at}`);
     } else if (event.type === "selector.failure") {
-      pushToast("critical", `Selector failure on ${event.provider}: ${event.message}`, true);
+      pushToast("critical", `Selector failure on ${event.provider}: ${event.message}`, true, `${event.type}:${event.runnerId}:${event.at}`);
     } else if (event.type === "run.alert" && event.alert.severity === "critical") {
-      pushToast("warning", event.alert.message, false);
+      pushToast("warning", event.alert.message, false, `run:${event.leagueId}:${event.alert.position}:${event.alert.tier}`);
     }
   });
 
-  const pushToast = (level: Toast["level"], message: string, audio: boolean): void => {
+  const pushToast = (level: Toast["level"], message: string, audio: boolean, key: string): void => {
+    if (seenKeys.current.has(key)) {
+      return;
+    }
+    seenKeys.current.add(key);
+    if (seenKeys.current.size > 200) {
+      seenKeys.current.clear();
+    }
     const id = Date.now() + Math.random();
-    setToasts((previous) => [...previous.slice(-4), { id, level, message }]);
+    setToasts((previous) => [...previous.slice(-2), { id, level, message }]);
     if (audio) {
       playTone(level);
     }

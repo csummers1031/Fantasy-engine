@@ -33,9 +33,9 @@ export function LeagueList({ leagues }: { leagues: LeagueRecord[] }) {
         <div className="divide-y divide-desk-line/60">
           {leagues.map((league) => (
             <div key={league.id} className="flex flex-wrap items-center gap-2 px-3 py-2 text-xs">
-              <div className="min-w-0 flex-1">
+              <div className="w-full min-w-0 lg:w-auto lg:flex-1">
                 <div className="font-medium">{league.name}</div>
-                <div className="text-[10px] text-muted-foreground">
+                <div className="break-words text-[10px] text-muted-foreground">
                   id {league.externalLeagueId} · draft {league.draftId || "n/a"} · team {league.userTeamId || "unresolved"} · {league.settings.teams} teams · {league.settings.rosterPositions.join(" ")}
                 </div>
               </div>
