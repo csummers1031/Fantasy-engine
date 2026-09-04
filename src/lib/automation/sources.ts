@@ -60,7 +60,7 @@ export async function fetchDraftStateFromApi(league: LeagueRecord): Promise<Draf
           "oauth",
         );
       }
-      const state = await fetchYahooDraftState(league.externalLeagueId, accessToken);
+      const state = await fetchYahooDraftState(league.externalLeagueId, accessToken, league.settings.pickTimerSeconds);
       if (state.userTeamId === "" && league.userTeamId !== "") {
         return { ...state, userTeamId: league.userTeamId, teams: state.teams.map((team) => ({ ...team, isUser: team.id === league.userTeamId })) };
       }

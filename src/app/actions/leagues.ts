@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createLeagueSchema } from "@/lib/api/schemas";
+import { createLeagueSchema, leagueSettingsSchema } from "@/lib/api/schemas";
 import { AppError } from "@/lib/errors";
 import { createLeague, deleteLeague, syncLeague } from "@/lib/leagues/service";
 import type { Provider } from "@/lib/types";
@@ -21,7 +21,20 @@ export async function addLeagueAction(_previous: ActionState, formData: FormData
     draftId: String(formData.get("draftId") ?? "").trim(),
     userTeamId: String(formData.get("userTeamId") ?? "").trim(),
   };
-  const parsed = createLeagueSchema.safeParse(raw);
+  const settingsJson = String(formData.get("settingsJson") ?? "").trim();
+  let settings: ReturnType<typeof leagueSettingsSchema.parse> | undefined;
+  if (settingsJson !== "") {
+    try {
+      const parsedSettings = leagueSettingsSchema.safeParse(JSON.parse(settingsJson));
+      if (!parsedSettings.success) {
+        return { ok: false, message: `Preset settings invalid: ${parsedSettings.error.issues.map((issue) => issue.message).join("; ")}`, leagueId: "" };
+      }
+      settings = parsedSettings.data;
+    } catch {
+      return { ok: false, message: "Preset settings are not valid JSON", leagueId: "" };
+    }
+  }
+  const parsed = createLeagueSchema.safeParse(settings ? { ...raw, settings } : raw);
   if (!parsed.success) {
     return { ok: false, message: parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.message}`).join("; "), leagueId: "" };
   }

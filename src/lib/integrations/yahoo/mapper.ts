@@ -2,7 +2,7 @@ import type { DraftPick, DraftState, DraftTeam, LeagueSettings, Player, Position
 import { DEFAULT_SCORING } from "@/lib/types";
 import { coordinatesForOverall } from "@/lib/engine/snake";
 import { normalizeName } from "@/lib/data/player-pool";
-import type { DomDraftSnapshot, YahooDraftResult, YahooLeagueSettings, YahooTeam } from "./types";
+import type { DomDraftSnapshot, YahooDraftResult, YahooLeagueSettings, YahooPlayer, YahooTeam } from "./types";
 
 const YAHOO_SLOT_MAP: Record<string, RosterSlot> = {
   QB: "QB",
@@ -91,10 +91,11 @@ function positionFromText(value: string): Position {
   return "WR";
 }
 
-export function mapYahooApiPicks(results: YahooDraftResult[], settings: LeagueSettings, playerNamesByKey: Map<string, string>, pool: Player[]): DraftPick[] {
+export function mapYahooApiPicks(results: YahooDraftResult[], settings: LeagueSettings, players: Map<string, YahooPlayer>, pool: Player[]): DraftPick[] {
   const poolByName = new Map(pool.map((player) => [normalizeName(player.name), player] as const));
   return results.map((result) => {
-    const name = playerNamesByKey.get(result.playerKey) ?? result.playerKey;
+    const info = players.get(result.playerKey);
+    const name = info ? info.fullName : result.playerKey;
     const known = poolByName.get(normalizeName(name));
     const coordinates = coordinatesForOverall(result.pick, settings.teams, settings.draftType);
     return {
@@ -104,8 +105,8 @@ export function mapYahooApiPicks(results: YahooDraftResult[], settings: LeagueSe
       slot: coordinates.slot,
       teamId: result.teamKey,
       playerId: known ? known.id : `yahoo:${result.playerKey}`,
-      playerName: name,
-      position: known ? known.position : "WR",
+      playerName: known ? known.name : name,
+      position: known ? known.position : positionFromText(info ? info.position : "WR"),
       timestamp: 0,
     };
   });

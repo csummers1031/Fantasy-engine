@@ -207,6 +207,9 @@ export function WarRoom({ league, initialSnapshot, initialSource, initialError, 
           {league.settings.teams} teams · {league.settings.rounds} rounds · {league.settings.scoring.reception} PPR · {league.settings.draftType}
         </Badge>
         <Badge variant={source === "runner" ? "success" : source === "sync" ? "info" : "warning"}>data: {source}</Badge>
+        {snapshot && !snapshot.userTeamResolved ? (
+          <Badge variant="critical" title="Your roster could not be identified from credentials. Set 'Your team' on the league page; analysis is assuming slot 1 until then.">your team unresolved, assuming slot 1</Badge>
+        ) : null}
         {error !== "" ? <span className="text-[11px] text-desk-warn">{error}</span> : null}
       </div>
       <div className="desk-grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4">

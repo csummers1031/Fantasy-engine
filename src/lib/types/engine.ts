@@ -65,6 +65,7 @@ export interface RosterNeed {
 export interface AnalysisSnapshot {
   leagueId: string;
   generatedAt: number;
+  userTeamResolved: boolean;
   currentPickOverall: number;
   userNextPickOverall: number;
   picksUntilUserTurn: number;

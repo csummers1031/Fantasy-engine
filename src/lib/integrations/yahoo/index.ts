@@ -1,7 +1,8 @@
 import { buildPlayerPool } from "@/lib/data/player-pool";
 import type { DraftState, DraftTeam, LeagueSettings } from "@/lib/types";
+import type { YahooPlayer } from "./types";
 import { DEFAULT_SCORING } from "@/lib/types";
-import { getDraftResults, getLeagueSettings, getTeams } from "./client";
+import { getDraftResults, getLeagueSettings, getPlayersByKeys, getTeams, normalizeYahooLeagueKey } from "./client";
 import { parseDraftHtml } from "./dom-parser";
 import { buildYahooDraftState, mapDomPicks, mapYahooApiPicks, mapYahooSettings, mapYahooTeams } from "./mapper";
 
@@ -11,12 +12,20 @@ export * from "./mapper";
 export * from "./oauth";
 export * from "./types";
 
-export async function fetchYahooDraftState(leagueKey: string, accessToken: string): Promise<DraftState> {
+export async function fetchYahooDraftState(rawLeagueKey: string, accessToken: string, pickTimerSeconds: number = 90): Promise<DraftState> {
+  const leagueKey = normalizeYahooLeagueKey(rawLeagueKey);
   const [settingsRaw, teamsRaw, results] = await Promise.all([getLeagueSettings(leagueKey, accessToken), getTeams(leagueKey, accessToken), getDraftResults(leagueKey, accessToken)]);
-  const settings = mapYahooSettings(settingsRaw);
+  const settings = mapYahooSettings(settingsRaw, pickTimerSeconds);
   const pool = buildPlayerPool(settings.scoring);
   const teams = mapYahooTeams(teamsRaw);
-  const picks = mapYahooApiPicks(results, settings, new Map(), pool);
+  let players = new Map<string, YahooPlayer>();
+  try {
+    const looked = await getPlayersByKeys(leagueKey, results.map((result) => result.playerKey), accessToken);
+    players = new Map(looked.map((player) => [player.playerKey, player] as const));
+  } catch {
+    players = new Map();
+  }
+  const picks = mapYahooApiPicks(results, settings, players, pool);
   const total = settings.teams * settings.rounds;
   const status: DraftState["status"] = picks.length >= total ? "complete" : picks.length > 0 ? "drafting" : "pre_draft";
   return buildYahooDraftState({ leagueKey, settings, teams, picks, status, secondsRemaining: -1, now: Date.now() });

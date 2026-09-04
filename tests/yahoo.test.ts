@@ -77,3 +77,50 @@ describe("yahoo oauth and api parsing", () => {
     expect(teams[1]?.name).toBe("Two");
   });
 });
+
+describe("yahoo player lookup and presets", () => {
+  it("normalizes bare league ids into league keys", async () => {
+    const { normalizeYahooLeagueKey, parsePlayers } = await import("@/lib/integrations/yahoo/client");
+    expect(normalizeYahooLeagueKey("305040")).toBe("nfl.l.305040");
+    expect(normalizeYahooLeagueKey("461.l.305040")).toBe("461.l.305040");
+    const players = parsePlayers({
+      fantasy_content: {
+        league: [
+          { league_key: "nfl.l.305040" },
+          {
+            players: {
+              "0": { player: [[{ player_key: "461.p.100" }, { name: { full: "Ja'Marr Chase" } }, { display_position: "WR" }, { editorial_team_abbr: "Cin" }]] },
+              count: 1,
+            },
+          },
+        ],
+      },
+    });
+    expect(players).toEqual([{ playerKey: "461.p.100", fullName: "Ja'Marr Chase", position: "WR", team: "CIN" }]);
+  });
+
+  it("maps api picks through the player lookup into the pool", async () => {
+    const { mapYahooApiPicks, defaultYahooSettings } = await import("@/lib/integrations/yahoo");
+    const { buildPlayerPool } = await import("@/lib/data/player-pool");
+    const settings = defaultYahooSettings(12);
+    const players = new Map([["461.p.100", { playerKey: "461.p.100", fullName: "Ja'Marr Chase", position: "WR", team: "CIN" }], ["461.p.200", { playerKey: "461.p.200", fullName: "Unknown Rookie", position: "RB", team: "DAL" }]]);
+    const picks = mapYahooApiPicks([{ pick: 1, round: 1, teamKey: "t1", playerKey: "461.p.100" }, { pick: 2, round: 1, teamKey: "t2", playerKey: "461.p.200" }], settings, players, buildPlayerPool(settings.scoring));
+    expect(picks[0]?.playerId).toBe("jamarr-chase");
+    expect(picks[1]?.playerName).toBe("Unknown Rookie");
+    expect(picks[1]?.position).toBe("RB");
+  });
+
+  it("encodes The Dudes preset with superflex, full PPR, 16 rounds and a 60 second clock", async () => {
+    const { findPreset } = await import("@/lib/data/league-presets");
+    const { computeReplacementLevels } = await import("@/lib/engine");
+    const { buildPlayerPool } = await import("@/lib/data/player-pool");
+    const preset = findPreset("yahoo-the-dudes-305040");
+    expect(preset).not.toBeNull();
+    expect(preset!.settings.rounds).toBe(16);
+    expect(preset!.settings.rosterPositions.filter((slot) => slot !== "IR")).toHaveLength(16);
+    expect(preset!.settings.pickTimerSeconds).toBe(60);
+    expect(preset!.settings.scoring.reception).toBe(1);
+    const levels = computeReplacementLevels(buildPlayerPool(preset!.settings.scoring), preset!.settings);
+    expect(levels.startersByPosition.QB).toBeGreaterThan(12);
+  });
+});

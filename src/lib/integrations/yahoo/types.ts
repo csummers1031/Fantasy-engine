@@ -35,6 +35,13 @@ export interface YahooTeam {
   isOwnedByCurrentLogin: boolean;
 }
 
+export interface YahooPlayer {
+  playerKey: string;
+  fullName: string;
+  position: string;
+  team: string;
+}
+
 export interface DomNode {
   tag: string;
   text: string;

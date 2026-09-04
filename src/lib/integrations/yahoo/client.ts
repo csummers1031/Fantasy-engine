@@ -1,5 +1,5 @@
 import { fetchJson, asArray, asNumber, asRecord, asString } from "../http";
-import type { YahooDraftResult, YahooLeagueSettings, YahooTeam } from "./types";
+import type { YahooDraftResult, YahooLeagueSettings, YahooPlayer, YahooTeam } from "./types";
 
 export function yahooBase(): string {
   return (process.env.YAHOO_API_BASE ?? "https://fantasysports.yahooapis.com/fantasy/v2").replace(/\/$/, "");
@@ -119,4 +119,52 @@ export async function getLeagueSettings(leagueKey: string, accessToken: string):
 export async function getTeams(leagueKey: string, accessToken: string): Promise<YahooTeam[]> {
   const raw = await fetchJson<unknown>(`${yahooBase()}/league/${encodeURIComponent(leagueKey)}/teams?format=json`, { headers: authHeaders(accessToken) });
   return parseTeams(raw);
+}
+
+export const YAHOO_PLAYER_BATCH = 25;
+
+export function normalizeYahooLeagueKey(value: string, gameKey: string = "nfl"): string {
+  const trimmed = value.trim();
+  if (/^\d+$/.test(trimmed)) {
+    return `${gameKey}.l.${trimmed}`;
+  }
+  return trimmed;
+}
+
+export function parsePlayers(raw: unknown): YahooPlayer[] {
+  const root = asRecord(asRecord(raw).fantasy_content);
+  const containers = [...asArray(root.league), ...asArray(root.players === undefined ? [] : [{ players: root.players }])];
+  const players: YahooPlayer[] = [];
+  for (const fragment of containers) {
+    const record = asRecord(fragment);
+    if (!record.players) {
+      continue;
+    }
+    for (const entry of collectionEntries(record.players)) {
+      const player = flattenFragments(asArray(entry.player)[0]);
+      const name = asRecord(player.name);
+      const key = asString(player.player_key);
+      if (key === "") {
+        continue;
+      }
+      players.push({
+        playerKey: key,
+        fullName: asString(name.full),
+        position: asString(player.display_position).split(",")[0] ?? "",
+        team: asString(player.editorial_team_abbr).toUpperCase(),
+      });
+    }
+  }
+  return players;
+}
+
+export async function getPlayersByKeys(leagueKey: string, playerKeys: string[], accessToken: string): Promise<YahooPlayer[]> {
+  const unique = [...new Set(playerKeys.filter((key) => key !== ""))];
+  const results: YahooPlayer[] = [];
+  for (let index = 0; index < unique.length; index += YAHOO_PLAYER_BATCH) {
+    const batch = unique.slice(index, index + YAHOO_PLAYER_BATCH);
+    const raw = await fetchJson<unknown>(`${yahooBase()}/league/${encodeURIComponent(leagueKey)}/players;player_keys=${batch.map((key) => encodeURIComponent(key)).join(",")}?format=json`, { headers: authHeaders(accessToken) });
+    results.push(...parsePlayers(raw));
+  }
+  return results;
 }

@@ -10,6 +10,7 @@ import { automationCapability } from "@/lib/automation/runtime";
 import { listCredentialSummaries } from "@/lib/db/credentials";
 import { listLeagues } from "@/lib/leagues/service";
 import type { Provider } from "@/lib/types";
+import { presetsForProvider } from "@/lib/data/league-presets";
 
 export const dynamic = "force-dynamic";
 
@@ -66,7 +67,7 @@ export default async function ProviderPage({ params }: { params: Promise<{ provi
             ))}
           </CardContent>
         </Card>
-        <AddLeagueForm provider={typed} />
+        <AddLeagueForm provider={typed} presets={presetsForProvider(typed)} />
         <LeagueList leagues={providerLeagues} />
       </div>
       <div className="flex flex-col gap-2">

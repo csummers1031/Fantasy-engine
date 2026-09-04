@@ -43,6 +43,7 @@ export function analyzeDraft(input: AnalysisInput): AnalysisSnapshot {
   return {
     leagueId: state.leagueId,
     generatedAt: now,
+    userTeamResolved: userTeam !== undefined && state.userTeamId !== "",
     currentPickOverall: currentOverall,
     userNextPickOverall: nextPick,
     picksUntilUserTurn: untilTurn,

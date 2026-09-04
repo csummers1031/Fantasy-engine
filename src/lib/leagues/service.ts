@@ -7,6 +7,7 @@ import { fetchDraftState, resolveSourceKind } from "@/lib/automation/sources";
 import { findRunnerForLeague } from "@/lib/automation/manager";
 import type { AnalysisSnapshot, DraftState, LeagueRecord, LeagueSettings, Provider, RunnerPolicy } from "@/lib/types";
 import { DEFAULT_RUNNER_POLICY, DEFAULT_SCORING } from "@/lib/types";
+import { normalizeYahooLeagueKey } from "@/lib/integrations/yahoo/client";
 
 export const DEFAULT_LEAGUE_SETTINGS: LeagueSettings = {
   teams: 12,
@@ -34,13 +35,14 @@ export interface SyncResult {
 }
 
 export async function createLeague(input: CreateLeagueInput): Promise<SyncResult> {
-  const duplicates = await leaguesTable.where((row) => row.provider === input.provider && row.externalLeagueId === input.externalLeagueId);
+  const externalLeagueId = input.provider === "yahoo" ? normalizeYahooLeagueKey(input.externalLeagueId) : input.externalLeagueId;
+  const duplicates = await leaguesTable.where((row) => row.provider === input.provider && row.externalLeagueId === externalLeagueId);
   const now = Date.now();
   const league: LeagueRecord = {
     id: duplicates[0]?.id ?? newId("lg"),
     provider: input.provider,
-    externalLeagueId: input.externalLeagueId,
-    name: input.name !== "" ? input.name : `${input.provider} ${input.externalLeagueId}`,
+    externalLeagueId,
+    name: input.name !== "" ? input.name : `${input.provider} ${externalLeagueId}`,
     season: input.season,
     draftId: input.draftId,
     userTeamId: input.userTeamId,
