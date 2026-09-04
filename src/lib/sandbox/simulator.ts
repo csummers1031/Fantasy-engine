@@ -251,6 +251,35 @@ export class SandboxDraft {
     return this.manualPickThisTurn;
   }
 
+  resetClock(now: number = Date.now()): void {
+    this.pickStartedAt = now;
+  }
+
+  platformAutoPick(now: number = Date.now()): DraftPick {
+    const onClock = this.onClockTeam();
+    const best = this.available()[0];
+    if (!best) {
+      throw new AppError("RUNNER_STATE", "No players remain for the platform auto pick");
+    }
+    return this.makePick(onClock.id, best.id, now);
+  }
+
+  replay(picks: ReadonlyArray<{ teamId: string; playerId: string; timestamp: number }>): number {
+    let applied = 0;
+    for (const pick of picks) {
+      if (this.isComplete) {
+        break;
+      }
+      const onClock = this.onClockTeam();
+      if (onClock.id !== pick.teamId || this.picks.some((existing) => existing.playerId === pick.playerId)) {
+        break;
+      }
+      this.makePick(pick.teamId, pick.playerId, pick.timestamp);
+      applied += 1;
+    }
+    return applied;
+  }
+
   makeBotPick(now: number = Date.now()): DraftPick {
     const onClock = this.onClockTeam();
     if (onClock.isUser) {
@@ -326,7 +355,7 @@ export class SandboxDraft {
       return null;
     }
     if (this.isUserOnClock()) {
-      return this.autoPickForUser(policy, now);
+      return policy.mode === "autopilot" ? this.autoPickForUser(policy, now) : this.platformAutoPick(now);
     }
     return this.makeBotPick(now);
   }

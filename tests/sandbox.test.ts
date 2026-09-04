@@ -62,3 +62,20 @@ describe("live sandbox bots", () => {
     draft.stopLiveBots();
   });
 });
+
+describe("sandbox platform auto pick and replay", () => {
+  it("auto drafts by ADP when the clock expires in co-pilot mode and replays picks", () => {
+    const draft = new SandboxDraft("replay", { teams: 6, rounds: 2, userSlot: 1, pickTimerSeconds: 10, seed: 9 }, 0);
+    const bestAdp = draft.available()[0]!;
+    const pick = draft.expireClock(11000, DEFAULT_RUNNER_POLICY);
+    expect(pick?.playerId).toBe(bestAdp.id);
+    draft.makeBotPick(12000);
+    draft.makeBotPick(13000);
+    const copy = new SandboxDraft("replay-2", { teams: 6, rounds: 2, userSlot: 1, pickTimerSeconds: 10, seed: 9 }, 0);
+    const applied = copy.replay(draft.picks.map((entry) => ({ teamId: entry.teamId, playerId: entry.playerId, timestamp: entry.timestamp })));
+    expect(applied).toBe(3);
+    expect(copy.state(0).clock.currentPickOverall).toBe(4);
+    copy.resetClock(50000);
+    expect(copy.state(50000).clock.pickDeadlineAt).toBe(60000);
+  });
+});

@@ -131,8 +131,13 @@ export function SandboxConsole({ liveSandboxes, history }: SandboxConsoleProps) 
             <Button size="sm" onClick={() => void runStress()} disabled={pending}>
               <Gauge /> Fire stress test
             </Button>
-            <Button size="sm" variant="success" onClick={() => void startLive()} disabled={pending}>
-              <Activity /> Start live sandbox
+            <Button asChild size="sm" variant="success">
+              <Link href="/sandbox/live">
+                <Activity /> Start live sandbox
+              </Link>
+            </Button>
+            <Button size="sm" variant="outline" onClick={() => void startLive()} disabled={pending} title="Runs the draft as a server process. Local runtime only; serverless hosts drop it between requests.">
+              Server sandbox
             </Button>
           </div>
           {pending || progress > 0 ? <Progress value={progress} /> : null}
