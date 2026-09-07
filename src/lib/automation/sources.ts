@@ -7,6 +7,7 @@ import { saveCredential } from "@/lib/db/credentials";
 import { findLiveSandbox } from "@/lib/sandbox/registry";
 import type { DraftState, LeagueRecord } from "@/lib/types";
 import { draftStateFromPage } from "./page-source";
+import { getLiveSessionForProvider } from "./browser";
 
 export type SourceKind = "api" | "page" | "sandbox";
 
@@ -31,6 +32,9 @@ export async function fetchDraftStateFromApi(league: LeagueRecord): Promise<Draf
     case "espn": {
       const credential = await loadCredential("espn");
       const cookies = credential && credential.provider === "espn" ? { swid: credential.data.swid, espnS2: credential.data.espnS2 } : null;
+      if (!cookies && getLiveSessionForProvider("espn")) {
+        return draftStateFromPage(league, null, Date.now());
+      }
       const state = await fetchEspnDraftState(league.season, league.externalLeagueId, cookies);
       if (state.userTeamId === "" && league.userTeamId !== "") {
         return { ...state, userTeamId: league.userTeamId, teams: state.teams.map((team) => ({ ...team, isUser: team.id === league.userTeamId })) };
@@ -40,7 +44,10 @@ export async function fetchDraftStateFromApi(league: LeagueRecord): Promise<Draf
     case "yahoo": {
       const credential = await loadCredential("yahoo");
       if (!credential || credential.provider !== "yahoo" || credential.data.accessToken === "") {
-        throw new AppError("PROVIDER_AUTH", "Yahoo OAuth token missing. Complete the OAuth flow or use the browser page source.");
+        if (getLiveSessionForProvider("yahoo")) {
+          return draftStateFromPage(league, null, Date.now());
+        }
+        throw new AppError("PROVIDER_AUTH", "Yahoo OAuth token missing. Complete the OAuth flow, or launch the Yahoo browser session and open the draft room so the runner can read the page.");
       }
       let accessToken = credential.data.accessToken;
       if (tokenIsExpiring(credential.data.expiresAt) && credential.data.refreshToken !== "") {

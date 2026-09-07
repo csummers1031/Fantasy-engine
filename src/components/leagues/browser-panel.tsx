@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Cookie, ExternalLink, MonitorPlay, Power } from "lucide-react";
+import { Camera, Cookie, Download, ExternalLink, MonitorPlay, Power } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ export function BrowserPanel({ provider, capability }: { provider: Provider; cap
   const [url, setUrl] = useState("");
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
+  const [snapshotId, setSnapshotId] = useState("");
 
   const refresh = useCallback(async () => {
     try {
@@ -62,7 +63,7 @@ export function BrowserPanel({ provider, capability }: { provider: Provider; cap
         <Badge variant={capability.supported ? "success" : "warning"}>{capability.supported ? "ready" : "unavailable"}</Badge>
       </CardHeader>
       <CardContent className="space-y-2 text-xs">
-        {!capability.supported ? <div className="text-[11px] text-muted-foreground">{capability.reason} Run the app locally with `npm run dev` to use browser automation.</div> : null}
+        {!capability.supported ? <div className="text-[11px] text-muted-foreground">{capability.reason} Run the app locally with `npm run dev` to use browser automation.</div> : <div className="text-[11px] text-muted-foreground">Launch opens a separate Chrome window with its own profile. Sign in to {provider} inside that window once; the login persists between launches.</div>}
         <div className="flex gap-1">
           <Input placeholder="Optional draft room URL" value={url} onChange={(event) => setUrl(event.target.value)} className="h-7" />
           <Button size="sm" disabled={pending || !capability.supported} onClick={() => act(async () => {
@@ -89,6 +90,20 @@ export function BrowserPanel({ provider, capability }: { provider: Provider; cap
                   return result.espn ? `Extracted ${result.count} cookies. SWID ${result.espn.swid} saved: ${result.saved}` : `Extracted ${result.count} cookies but SWID/espn_s2 not present yet. Sign in first.`;
                 })}>
                   <Cookie /> Extract cookies
+                </Button>
+              ) : null}
+              <Button size="sm" variant="outline" disabled={pending} onClick={() => act(async () => {
+                const result = await apiRequest<{ snapshot: { id: string; nodeCount: number; frameCount: number; title: string }; parsed: { picks: number; secondsRemaining: number; onClockTeamName: string; available: number } }>("/api/browser/snapshot", { method: "POST", body: JSON.stringify({ sessionId: open.id }) });
+                setSnapshotId(result.snapshot.id);
+                return `Captured "${result.snapshot.title}" (${result.snapshot.nodeCount} nodes, ${result.snapshot.frameCount} frames). Parser found ${result.parsed.picks} picks, ${result.parsed.available} available players, clock ${result.parsed.secondsRemaining < 0 ? "not found" : `${result.parsed.secondsRemaining}s`}, on clock: ${result.parsed.onClockTeamName || "not found"}. Download the file and send it over so the selectors can be tuned to the real page.`;
+              })}>
+                <Camera /> Capture draft room
+              </Button>
+              {snapshotId !== "" ? (
+                <Button asChild size="sm" variant="outline">
+                  <a href={`/api/browser/snapshot/${snapshotId}`} download>
+                    <Download /> Download snapshot
+                  </a>
                 </Button>
               ) : null}
               <Button size="sm" variant="ghost" disabled={pending} onClick={() => act(async () => {
