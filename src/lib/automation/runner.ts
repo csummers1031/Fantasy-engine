@@ -6,7 +6,7 @@ import { notice, publish } from "@/lib/events/bus";
 import { findLiveSandbox } from "@/lib/sandbox/registry";
 import type { AnalysisSnapshot, DraftState, LeagueRecord, RunnerMode, RunnerPolicy, RunnerRecord, RunnerStatus } from "@/lib/types";
 import { executeDraftClick } from "./actions";
-import { getLiveSessionForProvider } from "./browser";
+import { activePage, getLiveSessionForProvider } from "./browser";
 import { fetchDraftState, type SourceKind } from "./sources";
 
 export interface RunnerOptions {
@@ -213,7 +213,7 @@ export class DraftRunner {
       if (!session) {
         throw new AppError("SELECTOR_FAILURE", `No open browser session for ${this.league.provider}; cannot execute autopilot pick`, { details: { attempted: [] } });
       }
-      const result = await executeDraftClick(session.page, player.name);
+      const result = await executeDraftClick(activePage(session), player.name);
       this.record.actionCount += 1;
       publish({ type: "autopilot.action", runnerId: this.id, leagueId: this.league.id, playerName: player.name, success: result.success, detail: `${decision.reason}. ${result.detail}`, at: Date.now() });
       notice("info", `Autopilot drafted ${player.name} (${player.position}) with ${decision.secondsRemaining.toFixed(1)}s left.`, true);

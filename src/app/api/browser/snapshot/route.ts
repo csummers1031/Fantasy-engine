@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { handle, jsonOk, parseBody } from "@/lib/api/respond";
-import { getLiveSession } from "@/lib/automation/browser";
+import { activePage, getLiveSession } from "@/lib/automation/browser";
 import { captureFrameTrees } from "@/lib/automation/dom-snapshot";
 import { listSnapshots, saveSnapshot } from "@/lib/automation/snapshot-store";
 import { AppError } from "@/lib/errors";
@@ -21,7 +21,7 @@ export async function POST(request: Request): Promise<Response> {
     if (!session) {
       throw new AppError("NOT_FOUND", `Browser session ${sessionId} is not open`);
     }
-    const page = session.page;
+    const page = activePage(session);
     const frames = await captureFrameTrees(page);
     const html = await page.content().catch(() => "");
     const title = await page.title().catch(() => "");

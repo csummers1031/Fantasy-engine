@@ -3,7 +3,7 @@ import { parseDraftDom } from "@/lib/integrations/yahoo/dom-parser";
 import { buildYahooDraftState, mapDomPicks } from "@/lib/integrations/yahoo/mapper";
 import { buildPlayerPool } from "@/lib/data/player-pool";
 import type { DraftState, DraftTeam, LeagueRecord } from "@/lib/types";
-import { getLiveSessionForProvider } from "./browser";
+import { activePage, getLiveSessionForProvider } from "./browser";
 import { captureFrameTrees } from "./dom-snapshot";
 import { AppError } from "@/lib/errors";
 
@@ -16,7 +16,7 @@ export async function draftStateFromPage(league: LeagueRecord, previous: DraftSt
   if (!session) {
     throw new AppError("BROWSER_LAUNCH", `No open browser session for ${league.provider}. Launch one from the league page first.`);
   }
-  const trees = await captureFrameTrees(session.page);
+  const trees = await captureFrameTrees(activePage(session));
   const snapshot = parseDraftDom(mergeTrees(trees));
   const pool = buildPlayerPool(league.settings.scoring);
   const teams: DraftTeam[] = previous && previous.teams.length > 0 ? previous.teams : [];

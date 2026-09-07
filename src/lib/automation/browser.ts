@@ -89,6 +89,24 @@ export async function launchPersistentSession(provider: Provider, targetUrl: str
   }
 }
 
+const DRAFT_URL_HINTS = ["/draft", "draftclient", "draftroom", "mock"];
+
+export function pickDraftPage(context: BrowserContext, fallback: Page): Page {
+  const pages = context.pages().filter((page) => !page.isClosed());
+  if (pages.length === 0) {
+    return fallback;
+  }
+  const draftPage = [...pages].reverse().find((page) => {
+    const url = page.url().toLowerCase();
+    return DRAFT_URL_HINTS.some((hint) => url.includes(hint));
+  });
+  return draftPage ?? pages[pages.length - 1] ?? fallback;
+}
+
+export function activePage(session: LiveSession): Page {
+  return pickDraftPage(session.context, session.page);
+}
+
 export function getLiveSession(sessionId: string): LiveSession | null {
   return sessions().get(sessionId) ?? null;
 }
