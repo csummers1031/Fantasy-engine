@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { ExternalLink, FileCode2 } from "lucide-react";
+import { ExternalLink, FileCode2, KeyRound } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,6 +11,7 @@ import type { DomDraftSnapshot } from "@/lib/integrations/yahoo/types";
 
 export function YahooOAuthPanel({ hasCredential }: { hasCredential: boolean }) {
   const [message, setMessage] = useState("");
+  const [code, setCode] = useState("");
   const [html, setHtml] = useState("");
   const [snapshot, setSnapshot] = useState<DomDraftSnapshot | null>(null);
   return (
@@ -23,7 +25,7 @@ export function YahooOAuthPanel({ hasCredential }: { hasCredential: boolean }) {
             try {
               const result = await apiRequest<{ url: string; redirectUri: string }>("/api/yahoo/oauth/authorize");
               window.open(result.url, "_blank", "noopener");
-              setMessage(`Authorize window opened. Redirect URI registered with Yahoo must equal ${result.redirectUri}.`);
+              setMessage(result.redirectUri === "oob" ? "Yahoo opened in a new tab. Approve access, copy the code Yahoo shows you, and paste it below." : `Authorize window opened. Redirect URI registered with Yahoo must equal ${result.redirectUri}.`);
             } catch (caught) {
               setMessage(caught instanceof Error ? caught.message : String(caught));
             }
@@ -31,6 +33,24 @@ export function YahooOAuthPanel({ hasCredential }: { hasCredential: boolean }) {
             <ExternalLink /> Start OAuth
           </Button>
           {!hasCredential ? <span className="text-[11px] text-muted-foreground">Save consumer key and secret first.</span> : null}
+        </div>
+        <div className="space-y-1">
+          <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Step 2: paste the code Yahoo shows after you approve</div>
+          <div className="flex gap-1">
+            <Input value={code} onChange={(event) => setCode(event.target.value)} placeholder="e.g. abcdefg" className="h-7 max-w-[220px] font-mono" />
+            <Button size="sm" disabled={code.trim() === ""} onClick={async () => {
+              try {
+                const result = await apiRequest<{ expiresAt: number; hasRefreshToken: boolean }>("/api/yahoo/oauth/token", { method: "POST", body: JSON.stringify({ code: code.trim() }) });
+                setMessage(`Yahoo connected. Token valid until ${new Date(result.expiresAt).toLocaleTimeString()}${result.hasRefreshToken ? " and refreshes automatically" : ""}. Now click Sync on each league.`);
+                setCode("");
+                window.location.reload();
+              } catch (caught) {
+                setMessage(caught instanceof Error ? caught.message : String(caught));
+              }
+            }}>
+              <KeyRound /> Exchange code
+            </Button>
+          </div>
         </div>
         <div className="space-y-1">
           <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Fallback: paste draft room HTML to test the structural parser</div>

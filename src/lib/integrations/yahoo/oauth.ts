@@ -9,7 +9,7 @@ export function resolveYahooConfig(overrides: Partial<YahooOAuthConfig> = {}): Y
   return {
     consumerKey: overrides.consumerKey ?? process.env.YAHOO_CONSUMER_KEY ?? "",
     consumerSecret: overrides.consumerSecret ?? process.env.YAHOO_CONSUMER_SECRET ?? "",
-    redirectUri: overrides.redirectUri ?? process.env.YAHOO_REDIRECT_URI ?? "http://localhost:3000/api/yahoo/oauth/callback",
+    redirectUri: overrides.redirectUri ?? process.env.YAHOO_REDIRECT_URI ?? "oob",
   };
 }
 

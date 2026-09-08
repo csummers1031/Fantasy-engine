@@ -113,10 +113,10 @@ export const liveSandboxSchema = z.object({
 export const sandboxPickSchema = z.object({ playerId: z.string().min(1) });
 
 export const yahooTokenSchema = z.object({
-  consumerKey: z.string().min(1),
-  consumerSecret: z.string().min(1),
-  code: z.string().min(1),
-  redirectUri: z.string().url().optional(),
+  consumerKey: z.string().min(1).optional(),
+  consumerSecret: z.string().min(1).optional(),
+  code: z.string().min(1).max(200),
+  redirectUri: z.string().min(1).optional(),
 });
 
 export const yahooDomSchema = z.object({ html: z.string().min(1).max(5_000_000), leagueKey: z.string().min(1).default("yahoo-dom"), teams: z.number().int().min(2).max(20).default(10) });
