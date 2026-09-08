@@ -26,7 +26,8 @@ export async function fetchJson<T>(url: string, options: HttpRequestOptions = {}
         throw new AppError("PROVIDER_HTTP", `Network failure for ${url}`, { cause: error, retryable: true, details: { url } });
       });
       if (response.status === 401 || response.status === 403) {
-        throw new AppError("PROVIDER_AUTH", `Upstream rejected credentials (${response.status})`, { details: { url, status: response.status } });
+        const body = (await response.text().catch(() => "")).replace(/\s+/g, " ").trim().slice(0, 300);
+        throw new AppError("PROVIDER_AUTH", `Upstream rejected credentials (${response.status})${body ? `: ${body}` : ""}`, { details: { url, status: response.status, body } });
       }
       if (response.status === 404) {
         throw new AppError("NOT_FOUND", `Upstream resource not found`, { details: { url, status: 404 } });

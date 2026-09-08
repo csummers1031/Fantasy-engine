@@ -40,6 +40,7 @@ describe("yahoo oauth and api parsing", () => {
   it("builds the authorize URL and parses token responses", () => {
     const url = buildAuthorizeUrl({ consumerKey: "key", consumerSecret: "secret", redirectUri: "http://localhost:3000/cb" }, "state1");
     expect(url).toContain("client_id=key");
+    expect(url).toContain("scope=fspt-r");
     expect(url).toContain("state=state1");
     expect(parseTokenResponse({ access_token: "a", refresh_token: "r", expires_in: 3600 }).expires_in).toBe(3600);
     expect(() => parseTokenResponse({})).toThrow();

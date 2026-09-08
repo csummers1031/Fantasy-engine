@@ -4,6 +4,7 @@ import type { YahooOAuthConfig, YahooTokenResponse } from "./types";
 
 export const YAHOO_AUTHORIZE_URL = "https://api.login.yahoo.com/oauth2/request_auth";
 export const YAHOO_TOKEN_URL = "https://api.login.yahoo.com/oauth2/get_token";
+export const YAHOO_FANTASY_SCOPE = "fspt-r";
 
 export function resolveYahooConfig(overrides: Partial<YahooOAuthConfig> = {}): YahooOAuthConfig {
   return {
@@ -21,6 +22,7 @@ export function buildAuthorizeUrl(config: YahooOAuthConfig, state: string): stri
     client_id: config.consumerKey,
     redirect_uri: config.redirectUri,
     response_type: "code",
+    scope: YAHOO_FANTASY_SCOPE,
     language: "en-us",
     state,
   });
