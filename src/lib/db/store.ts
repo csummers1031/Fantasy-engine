@@ -15,8 +15,16 @@ interface TableFile<T extends TableRow> {
 
 type Mutex = { queue: Promise<void> };
 
-const mutexes = new Map<string, Mutex>();
-const memoryTables = new Map<string, TableFile<TableRow>>();
+declare global {
+  var __fantasyEngineStoreMutexes: Map<string, Mutex> | undefined;
+}
+
+function mutexRegistry(): Map<string, Mutex> {
+  if (!globalThis.__fantasyEngineStoreMutexes) {
+    globalThis.__fantasyEngineStoreMutexes = new Map();
+  }
+  return globalThis.__fantasyEngineStoreMutexes;
+}
 
 function isWritable(dir: string): boolean {
   try {
@@ -48,10 +56,10 @@ export function resolveDataDir(): string {
 
 export function resetDataDirCache(): void {
   resolvedDataDir = null;
-  memoryTables.clear();
 }
 
 async function withLock<T>(name: string, operation: () => Promise<T>): Promise<T> {
+  const mutexes = mutexRegistry();
   let mutex = mutexes.get(name);
   if (!mutex) {
     mutex = { queue: Promise.resolve() };
@@ -75,10 +83,6 @@ function tablePath(name: string): string {
 }
 
 async function readTableFile<T extends TableRow>(name: string): Promise<TableFile<T>> {
-  const cached = memoryTables.get(name);
-  if (cached) {
-    return cached as TableFile<T>;
-  }
   const file = tablePath(name);
   try {
     const raw = await fs.readFile(file, "utf8");
@@ -86,14 +90,11 @@ async function readTableFile<T extends TableRow>(name: string): Promise<TableFil
     if (!Array.isArray(parsed.rows)) {
       throw new AppError("STORE_IO", `Table ${name} is corrupt`);
     }
-    memoryTables.set(name, parsed as TableFile<TableRow>);
     return parsed;
   } catch (error) {
     const code = (error as NodeJS.ErrnoException).code;
     if (code === "ENOENT") {
-      const empty: TableFile<T> = { version: 1, rows: [] };
-      memoryTables.set(name, empty as TableFile<TableRow>);
-      return empty;
+      return { version: 1, rows: [] };
     }
     throw new AppError("STORE_IO", `Failed to read table ${name}`, { cause: error, details: { file } });
   }
@@ -106,7 +107,6 @@ async function writeTableFile<T extends TableRow>(name: string, table: TableFile
     await fs.mkdir(path.dirname(file), { recursive: true });
     await fs.writeFile(tmp, JSON.stringify(table, null, 2), "utf8");
     await fs.rename(tmp, file);
-    memoryTables.set(name, table as TableFile<TableRow>);
   } catch (error) {
     try {
       await fs.unlink(tmp);
