@@ -7,7 +7,7 @@ import { exchangeCodeForToken, resolveYahooConfig } from "@/lib/integrations/yah
 
 export const dynamic = "force-dynamic";
 
-const querySchema = z.object({ code: z.string().min(1), state: z.string().default("") });
+const querySchema = z.object({ code: z.string().default(""), state: z.string().default(""), error: z.string().default(""), error_description: z.string().default("") });
 
 function escapeHtml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -28,8 +28,13 @@ button{margin-top:12px;background:#38bdf8;color:#0b0f14;border:0;border-radius:6
 
 export async function GET(request: Request): Promise<Response> {
   return handle(async () => {
-    const { code } = parseQuery(request, querySchema);
+    const { code, error, error_description: errorDescription } = parseQuery(request, querySchema);
     const url = new URL(request.url);
+    if (code === "") {
+      const reason = [error, errorDescription].filter((part) => part !== "").join(": ") || "Yahoo returned no authorization code";
+      const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><title>Yahoo authorization failed</title><style>body{margin:0;background:#0b0f14;color:#e5e9ef;font-family:-apple-system,Segoe UI,Roboto,sans-serif;display:flex;min-height:100vh;align-items:center;justify-content:center}.card{background:#111821;border:1px solid #ef4444;border-radius:10px;padding:24px;max-width:560px;width:92%}h1{font-size:16px;margin:0 0 8px;color:#fca5a5}p{font-size:13px;color:#8a96a6;line-height:1.5}code{color:#e5e9ef;word-break:break-all}</style></head><body><div class="card"><h1>Yahoo authorization failed</h1><p><code>${escapeHtml(reason)}</code></p><p>If this mentions scope or permissions, the Yahoo developer app needs Fantasy Sports access enabled. Otherwise go back to the app and click Start OAuth again.</p></div></body></html>`;
+      return new NextResponse(html, { status: 400, headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" } });
+    }
     const isLocal = url.hostname === "localhost" || url.hostname === "127.0.0.1";
     const credential = await loadCredential("yahoo");
     if (!isLocal || !credential || credential.provider !== "yahoo") {
