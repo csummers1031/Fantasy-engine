@@ -9,7 +9,7 @@ export function resolveYahooConfig(overrides: Partial<YahooOAuthConfig> = {}): Y
   return {
     consumerKey: overrides.consumerKey ?? process.env.YAHOO_CONSUMER_KEY ?? "",
     consumerSecret: overrides.consumerSecret ?? process.env.YAHOO_CONSUMER_SECRET ?? "",
-    redirectUri: overrides.redirectUri ?? process.env.YAHOO_REDIRECT_URI ?? "oob",
+    redirectUri: overrides.redirectUri ?? process.env.YAHOO_REDIRECT_URI ?? "https://fantasy-engine-ten.vercel.app/api/yahoo/oauth/callback",
   };
 }
 

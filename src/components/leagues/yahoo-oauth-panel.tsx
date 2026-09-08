@@ -25,7 +25,7 @@ export function YahooOAuthPanel({ hasCredential }: { hasCredential: boolean }) {
             try {
               const result = await apiRequest<{ url: string; redirectUri: string }>("/api/yahoo/oauth/authorize");
               window.open(result.url, "_blank", "noopener");
-              setMessage(result.redirectUri === "oob" ? "Yahoo opened in a new tab. Approve access, copy the code Yahoo shows you, and paste it below." : `Authorize window opened. Redirect URI registered with Yahoo must equal ${result.redirectUri}.`);
+              setMessage(`Yahoo opened in a new tab. Approve access, copy the code shown on the page it sends you to, and paste it below. (Redirect URI registered with Yahoo must equal ${result.redirectUri}.)`);
             } catch (caught) {
               setMessage(caught instanceof Error ? caught.message : String(caught));
             }
